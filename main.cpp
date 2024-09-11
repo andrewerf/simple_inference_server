@@ -1,11 +1,10 @@
-#include <uuid.h>
 #include <boost/lockfree/queue.hpp>
 #include <drogon/drogon.h>
+#include <fmt/format.h>
+#include <boost/program_options.hpp>
 
-#include <spdlog/spdlog.h>
 
 using namespace drogon;
-
 
 
 struct GlobalConfig
@@ -17,9 +16,6 @@ bool invokeProcessing( const std::filesystem::path& input, const std::filesystem
 {
     auto exitCode = system( fmt::format( "{} {} {}", globalConfig.invokePath.string(), input.string(), output.string() ).c_str() );
     return exitCode == 0;
-//    std::this_thread::sleep_for( std::chrono::seconds( 10 ) );
-//    system( fmt::format( "cp {} {}", input.string(), output.string() ).c_str() );
-//    return true;
 }
 
 std::string getInputFileName( const std::string& taskId )
@@ -106,19 +102,55 @@ Task<HttpResponsePtr> submitTask( HttpRequestPtr req )
     co_return resp;
 }
 
-
-int main()
+// Fix parsing std::filesystem::path with spaces (see https://github.com/boostorg/program_options/issues/69)
+namespace boost
 {
-    globalConfig.invokePath = "/home/andrew/Projects/Adalisk/cbct-teeth-segmentation/web/invoke.sh";
+template <>
+inline std::filesystem::path lexical_cast<std::filesystem::path, std::basic_string<char>>(const std::basic_string<char> &arg)
+{
+    return std::filesystem::path(arg);
+}
+}
+namespace po = boost::program_options;
+
+int main( int argc, char** argv )
+{
+    std::string host;
+    int port;
+
+    po::options_description desc( "Simple Inference Server" );
+    desc.add_options()
+        ( "help,h", "Display help message" )
+        ( "invokePath", po::value( &globalConfig.invokePath )->required(), "Path to the script that will be invoked" )
+        ( "host", po::value( &host )->default_value( "127.0.0.1" ), "Host to bind to" )
+        ( "port", po::value( &port )->default_value( 7654 ), "Port to bind to" )
+    ;
+
+    po::variables_map vm;
+    try
+    {
+        po::store( po::parse_command_line( argc, argv, desc ), vm );
+        if ( vm.count( "help" ) )
+        {
+            std::cout << desc << std::endl;
+            return 0;
+        }
+
+        po::notify( vm );
+    }
+    catch ( po::error& err )
+    {
+        std::cerr << "Failed to parse arguments: " << err.what() << std::endl;
+        return -1;
+    }
 
     app().registerHandler( "/track_result", std::function{ trackResultHandler } );
     app().registerHandler( "/get_result", std::function{ getResultHandler } );
     app().registerHandler( "/", std::function{ submitTask }, { Post } );
     app()
-        .setClientMaxBodySize( 1024*1024*1024 )
-        .addListener( "127.0.0.1", 7654 )
+        .setClientMaxBodySize( 1024*1024*1024 ) // 1gb
+        .addListener( host, port )
         .run();
-
 
     return 0;
 }
