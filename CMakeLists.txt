@@ -7,6 +7,8 @@ set(BUILD_ORM OFF CACHE BOOL "Build ORM")
 set(USE_STATIC_LIBS_ONLY OFF CACHE BOOL "Use static libs only")
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build drogon as a shared lib")
 set(USE_SPDLOG ON CACHE BOOL "Use spdlog")
+set(BUILD_BROTLI OFF CACHE BOOL "Build Brotli")
+set(BUILD_YAML_CONFIG OFF CACHE BOOL "Build yaml config")
 add_subdirectory(3rdparty/drogon)
 
 find_package(Boost REQUIRED COMPONENTS program_options)
