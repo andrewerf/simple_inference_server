@@ -2,6 +2,7 @@
 #include <drogon/drogon.h>
 #include <fmt/format.h>
 #include <boost/program_options.hpp>
+#include <spdlog/spdlog.h>
 
 
 using namespace drogon;
@@ -116,6 +117,7 @@ namespace po = boost::program_options;
 int main( int argc, char** argv )
 {
     std::string host;
+    std::filesystem::path certPath, keyPath;
     int port;
 
     po::options_description desc( "Simple Inference Server" );
@@ -124,6 +126,8 @@ int main( int argc, char** argv )
         ( "invokePath", po::value( &globalConfig.invokePath )->required(), "Path to the script that will be invoked" )
         ( "host", po::value( &host )->default_value( "127.0.0.1" ), "Host to bind to" )
         ( "port", po::value( &port )->default_value( 7654 ), "Port to bind to" )
+        ( "cert", po::value( &certPath )->default_value( {} ), "Path to SSL certificate" )
+        ( "key", po::value( &keyPath )->default_value( {} ), "Path to SSL key" )
     ;
 
     po::variables_map vm;
@@ -147,9 +151,24 @@ int main( int argc, char** argv )
     app().registerHandler( "/track_result", std::function{ trackResultHandler } );
     app().registerHandler( "/get_result", std::function{ getResultHandler } );
     app().registerHandler( "/", std::function{ submitTask }, { Post } );
+
+    const bool useSSL = exists( certPath ) && exists( keyPath );
+    if ( useSSL && !app().supportSSL() )
+    {
+        spdlog::error( "Current configuration does not support SSL" );
+        return -1;
+    }
+
+    if ( useSSL )
+        spdlog::info( "Use SSL" );
+    else
+        spdlog::info( "Do not use SSL" );
+
+    spdlog::default_logger()->flush();
+
     app()
         .setClientMaxBodySize( 1024*1024*1024 ) // 1gb
-        .addListener( host, port )
+        .addListener( host, port, useSSL, certPath, keyPath )
         .run();
 
     return 0;
