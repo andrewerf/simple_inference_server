@@ -11,6 +11,7 @@ set(BUILD_BROTLI OFF CACHE BOOL "Build Brotli")
 set(BUILD_YAML_CONFIG OFF CACHE BOOL "Build yaml config")
 add_subdirectory(3rdparty/drogon)
 
+set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost REQUIRED COMPONENTS program_options)
 
 add_executable(simple_inference_server main.cpp)
