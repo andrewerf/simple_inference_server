@@ -20,8 +20,10 @@ jobs:
 
       - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: g++ cmake make libjsoncpp-dev libc-ares-dev libboost-program-options-dev libspdlog-dev uuid-dev libz-dev libssl-dev
+          packages: g++ cmake make libjsoncpp-dev libc-ares-dev libspdlog-dev uuid-dev libz-dev libssl-dev
           execute_install_scripts: true
+
+      - run: apt install -yq libboost-program-options-dev
 
       - name: Build
         run: |
