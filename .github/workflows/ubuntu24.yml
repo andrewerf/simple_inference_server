@@ -23,7 +23,7 @@ jobs:
           packages: g++ cmake make libjsoncpp-dev libc-ares-dev libspdlog-dev uuid-dev libz-dev libssl-dev
           execute_install_scripts: true
 
-      - run: apt install -yq libboost-program-options-dev
+      - run: sudo apt install -yq libboost-program-options-dev
 
       - name: Build
         run: |
