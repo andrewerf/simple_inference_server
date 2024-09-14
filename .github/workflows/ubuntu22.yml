@@ -1,0 +1,28 @@
+name: Ubuntu22.04
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  build:
+    runs-on: ubuntu:24.04
+    steps:
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: g++ cmake make libjsoncpp-dev libc-ares-dev libboost-program-options-dev libspdlog-dev uuid-dev libz-dev libssl-dev
+
+      - name: Build
+        run: |
+          cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+          cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel 4
