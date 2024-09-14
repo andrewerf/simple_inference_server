@@ -3,6 +3,7 @@
 #include <fmt/format.h>
 #include <boost/program_options.hpp>
 #include <spdlog/spdlog.h>
+#include <fstream>
 
 
 using namespace drogon;
@@ -11,6 +12,7 @@ using namespace drogon;
 struct GlobalConfig
 {
     std::filesystem::path invokePath;
+    std::filesystem::path indexPath;
 } globalConfig;
 
 bool invokeProcessing( const std::filesystem::path& input, const std::filesystem::path& output )
@@ -66,7 +68,7 @@ Task<HttpResponsePtr> getResultHandler( HttpRequestPtr req )
     co_return resp;
 }
 
-Task<HttpResponsePtr> submitTask( HttpRequestPtr req )
+Task<HttpResponsePtr> submitTaskHandler( HttpRequestPtr req )
 {
     MultiPartParser filesUpload;
     if ( filesUpload.parse(req) != 0 || filesUpload.getFiles().size() != 1 )
@@ -103,6 +105,19 @@ Task<HttpResponsePtr> submitTask( HttpRequestPtr req )
     co_return resp;
 }
 
+Task<HttpResponsePtr> rootHandler( HttpRequestPtr req )
+{
+    auto resp = HttpResponse::newHttpResponse( HttpStatusCode::k200OK, CT_TEXT_HTML );
+    if ( exists( globalConfig.indexPath ) )
+    {
+        std::ifstream fin( globalConfig.indexPath );
+        std::stringstream buffer;
+        buffer << fin.rdbuf();
+        resp->setBody( buffer.str() );
+    }
+    co_return resp;
+}
+
 // Fix parsing std::filesystem::path with spaces (see https://github.com/boostorg/program_options/issues/69)
 namespace boost
 {
@@ -124,6 +139,7 @@ int main( int argc, char** argv )
     desc.add_options()
         ( "help,h", "Display help message" )
         ( "invokePath", po::value( &globalConfig.invokePath )->required(), "Path to the script that will be invoked" )
+        ( "indexPath", po::value( &globalConfig.indexPath )->default_value( {} ), "Path to the index.html" )
         ( "host", po::value( &host )->default_value( "127.0.0.1" ), "Host to bind to" )
         ( "port", po::value( &port )->default_value( 7654 ), "Port to bind to" )
         ( "cert", po::value( &certPath )->default_value( {} ), "Path to SSL certificate" )
@@ -150,7 +166,8 @@ int main( int argc, char** argv )
 
     app().registerHandler( "/track_result", std::function{ trackResultHandler } );
     app().registerHandler( "/get_result", std::function{ getResultHandler } );
-    app().registerHandler( "/", std::function{ submitTask }, { Post } );
+    app().registerHandler( "/submit", std::function{  submitTaskHandler }, {Post } );
+    app().registerHandler( "/", std::function{ rootHandler } );
 
     const bool useSSL = exists( certPath ) && exists( keyPath );
     if ( useSSL && !app().supportSSL() )

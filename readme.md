@@ -7,7 +7,7 @@ It is useful when you have an early-stage prototype, and you want to share it wi
 
 ## Workflow
 
-- Accepts `POST` request with a single `.zip` file to the root endpoint `/`
+- Accepts `POST` request with a single `.zip` file to the endpoint `/submit`
 - Displays the URL to track the task if it was accepted (`/track_result?task=...`)
 - When processing is finished, the track page displays the URL to download result (`get_result?task=...`)
 
@@ -27,6 +27,7 @@ $ simple_inference_server --help
 Simple Inference Server:
   -h [ --help ]           Display help message
   --invokePath arg        Path to the script that will be invoked
+  --indexPath arg (="")   Path to the index.html
   --host arg (=127.0.0.1) Host to bind to
   --port arg (=7654)      Port to bind to
   --cert arg (="")        Path to SSL certificate
@@ -64,7 +65,7 @@ The simplest web form that may serve as an interface to this server (provided th
 </head>
 
 <body>
-<form method="post" enctype="multipart/form-data" action="http://localhost:7654">
+<form method="post" enctype="multipart/form-data" action="http://localhost:7654/submit">
     <p>
         <input type="file" name="file" accept="application/zip">
     </p>
