@@ -8,8 +8,8 @@ It is useful when you have an early-stage prototype, and you want to share it wi
 ## Workflow
 
 - Accepts `POST` request with a single `.zip` file to the endpoint `/submit`
-- Displays the URL to track the task if it was accepted (`/track_result?task=...`)
-- When processing is finished, the track page displays the URL to download result (`get_result?task=...`)
+- Displays the URL to track the job if it was accepted (`/get_job_info?job_id=...`)
+- When processing is finished, the track page displays the URL to download result (`/get_result?job_id=...`)
 
 ## Usage
 
