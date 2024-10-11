@@ -24,7 +24,7 @@ namespace po = boost::program_options;
 int main( int argc, char** argv )
 {
     std::string host;
-    std::filesystem::path certPath, keyPath;
+    std::filesystem::path certPath, keyPath, uploads;
     int port;
     Controller::Config config;
 
@@ -37,6 +37,7 @@ int main( int argc, char** argv )
         ( "port", po::value( &port )->default_value( 7654 ), "Port to bind to" )
         ( "cert", po::value( &certPath )->default_value( {} ), "Path to SSL certificate" )
         ( "key", po::value( &keyPath )->default_value( {} ), "Path to SSL key" )
+        ( "uploads", po::value( &uploads )->default_value( "uploads" ), "Folder to store uploaded files" )
     ;
 
     po::variables_map vm;
@@ -57,6 +58,27 @@ int main( int argc, char** argv )
         return -1;
     }
 
+    // check that uploads directory is writable (or that we can create it)
+    std::error_code ec;
+    if ( std::filesystem::exists( uploads, ec ) )
+    {
+        const auto checkDir = uploads / "check";
+        if ( !std::filesystem::create_directory( checkDir, ec ) )
+        {
+            spdlog::error( "Uploads directory is not writable: {}", ec.message() );
+            return -1;
+        }
+        std::filesystem::remove( checkDir, ec );
+    }
+    else
+    {
+        if ( !std::filesystem::create_directory( uploads, ec ) )
+        {
+            spdlog::error( "Could not create uploads directory: {}", ec.message() );
+            return -1;
+        }
+    }
+
     const bool useSSL = exists( certPath ) && exists( keyPath );
     if ( useSSL && !app().supportSSL() )
     {
@@ -74,6 +96,7 @@ int main( int argc, char** argv )
 
     app()
         .setClientMaxBodySize( 1024*1024*1024 ) // 1gb
+        .setUploadPath( uploads )
         .addListener( host, port, useSSL, certPath, keyPath )
         .registerController( std::make_shared<Controller>( config ) )
         .run();
