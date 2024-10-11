@@ -70,6 +70,7 @@ int main( int argc, char** argv )
         spdlog::info( "Do not use SSL" );
 
     spdlog::default_logger()->flush();
+    trantor::Logger::enableSpdLog( spdlog::default_logger() );
 
     app()
         .setClientMaxBodySize( 1024*1024*1024 ) // 1gb
