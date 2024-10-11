@@ -96,13 +96,22 @@ Controller::ExpectedOrError<JobId> Controller::submit_( drogon::HttpRequestPtr r
 
 Controller::ExpectedOrError<Job> Controller::getInfo_( drogon::HttpRequestPtr req )
 {
-    const auto maybeJobId = req->getOptionalParameter<std::string>( "job_id" );
+    const auto maybeJob
+        = req->getOptionalParameter<std::string>( "job_id" )
+        .and_then( [this] ( auto jobId ) -> std::optional<Job>
+        {
+            std::shared_lock lock( jobsMutex_ );
+            auto it = jobs_.find( jobId );
+            if ( it != jobs_.end() )
+                return it->second;
+            else
+                return std::nullopt;
+        } );
 
-    if ( !maybeJobId )
+    if ( !maybeJob )
         return std::unexpected<Error>{ { k404NotFound, "Job is not found" } };
 
-    std::shared_lock lock( jobsMutex_ );
-    return jobs_[*maybeJobId];
+    return *maybeJob;
 }
 
 drogon::HttpResponsePtr Controller::getResult_( drogon::HttpRequestPtr req )
