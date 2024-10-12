@@ -66,6 +66,7 @@ Controller::ExpectedOrError<JobId> Controller::submit_( drogon::HttpRequestPtr r
 
     const auto jobId = drogon::utils::getUuid();
     file.saveAs( getInputFileName( jobId ) );
+    LOG_DEBUG << "Submitted job: " << jobId;
 
     app().getLoop()->queueInLoop( [jobId, this]
     {
@@ -100,6 +101,7 @@ Controller::ExpectedOrError<Job> Controller::getInfo_( drogon::HttpRequestPtr re
         = req->getOptionalParameter<std::string>( "job_id" )
         .and_then( [this] ( auto jobId ) -> std::optional<Job>
         {
+            LOG_DEBUG << "Requested job info: " << jobId;
             std::shared_lock lock( jobsMutex_ );
             auto it = jobs_.find( jobId );
             if ( it != jobs_.end() )
@@ -117,6 +119,7 @@ Controller::ExpectedOrError<Job> Controller::getInfo_( drogon::HttpRequestPtr re
 drogon::HttpResponsePtr Controller::getResult_( drogon::HttpRequestPtr req )
 {
     const auto maybeTask = req->getOptionalParameter<std::string>( "job_id" );
+    LOG_DEBUG << "Requested job result: " << maybeTask.value_or( "[empty job_id]" );
     const auto maybeOutput = maybeTask.transform( getOutputPath );
     if ( !maybeOutput || !std::filesystem::exists( *maybeOutput ) )
     {
