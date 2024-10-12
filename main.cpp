@@ -92,6 +92,7 @@ int main( int argc, char** argv )
         spdlog::info( "Do not use SSL" );
 
     spdlog::default_logger()->flush();
+    spdlog::default_logger()->set_level( spdlog::level::debug );
     trantor::Logger::enableSpdLog( spdlog::default_logger() );
 
     app()
