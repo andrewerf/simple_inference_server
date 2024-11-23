@@ -26,6 +26,7 @@ int main( int argc, char** argv )
     std::string host;
     std::filesystem::path certPath, keyPath, uploads;
     int port;
+    bool clearUploads;
     Controller::Config config;
 
     po::options_description desc( "Simple Inference Server" );
@@ -38,6 +39,7 @@ int main( int argc, char** argv )
         ( "cert", po::value( &certPath )->default_value( {} ), "Path to SSL certificate" )
         ( "key", po::value( &keyPath )->default_value( {} ), "Path to SSL key" )
         ( "uploads", po::value( &uploads )->default_value( "uploads" ), "Folder to store uploaded files" )
+        ( "clear_uploads", po::bool_switch( &clearUploads )->default_value( false ), "Clear uploads folder" )
     ;
 
     po::variables_map vm;
@@ -58,8 +60,18 @@ int main( int argc, char** argv )
         return -1;
     }
 
-    // check that uploads directory is writable (or that we can create it)
     std::error_code ec;
+    if ( std::filesystem::exists( uploads, ec ) && clearUploads )
+    {
+        std::filesystem::remove_all( uploads, ec );
+        if ( ec )
+        {
+            spdlog::error( "Could not remove uploads directory: {}", ec.message() );
+            return -1;
+        }
+    }
+
+    // check that uploads directory is writable (or that we can create it)
     if ( std::filesystem::exists( uploads, ec ) )
     {
         const auto checkDir = uploads / "check";
